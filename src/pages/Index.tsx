@@ -19,155 +19,287 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import Icon from '@/components/ui/icon';
 import { toast } from 'sonner';
 
 interface Player {
   id: string;
   name: string;
-  rating: number;
+  position: string;
+  number: number;
+}
+
+interface Team {
+  id: string;
+  name: string;
+  logo: string;
+  points: number;
+  played: number;
   wins: number;
+  draws: number;
   losses: number;
-  winRate: number;
-  gamesPlayed: number;
+  goalsFor: number;
+  goalsAgainst: number;
+  goalDifference: number;
+  players: Player[];
 }
 
 interface Match {
   id: string;
-  winnerId: string;
-  loserId: string;
+  homeTeamId: string;
+  awayTeamId: string;
+  homeScore: number;
+  awayScore: number;
   date: Date;
 }
 
 const Index = () => {
-  const [players, setPlayers] = useState<Player[]>([
-    { id: '1', name: 'Player One', rating: 1500, wins: 15, losses: 5, winRate: 75, gamesPlayed: 20 },
-    { id: '2', name: 'Player Two', rating: 1450, wins: 12, losses: 8, winRate: 60, gamesPlayed: 20 },
-    { id: '3', name: 'Player Three', rating: 1400, wins: 10, losses: 10, winRate: 50, gamesPlayed: 20 },
-    { id: '4', name: 'Player Four', rating: 1350, wins: 8, losses: 12, winRate: 40, gamesPlayed: 20 },
-    { id: '5', name: 'Player Five', rating: 1300, wins: 5, losses: 15, winRate: 25, gamesPlayed: 20 },
+  const [teams, setTeams] = useState<Team[]>([
+    {
+      id: '1',
+      name: 'Спартак',
+      logo: '🔴',
+      points: 15,
+      played: 6,
+      wins: 5,
+      draws: 0,
+      losses: 1,
+      goalsFor: 12,
+      goalsAgainst: 4,
+      goalDifference: 8,
+      players: [
+        { id: 'p1', name: 'Иванов', position: 'ВРТ', number: 1 },
+        { id: 'p2', name: 'Петров', position: 'ЗАЩ', number: 5 },
+        { id: 'p3', name: 'Сидоров', position: 'ПОЛ', number: 10 },
+        { id: 'p4', name: 'Смирнов', position: 'НАП', number: 9 },
+      ],
+    },
+    {
+      id: '2',
+      name: 'ЦСКА',
+      logo: '🔵',
+      points: 12,
+      played: 6,
+      wins: 4,
+      draws: 0,
+      losses: 2,
+      goalsFor: 10,
+      goalsAgainst: 6,
+      goalDifference: 4,
+      players: [
+        { id: 'p5', name: 'Кузнецов', position: 'ВРТ', number: 1 },
+        { id: 'p6', name: 'Попов', position: 'ЗАЩ', number: 4 },
+        { id: 'p7', name: 'Соколов', position: 'ПОЛ', number: 8 },
+        { id: 'p8', name: 'Лебедев', position: 'НАП', number: 11 },
+      ],
+    },
+    {
+      id: '3',
+      name: 'Зенит',
+      logo: '⚪',
+      points: 10,
+      played: 6,
+      wins: 3,
+      draws: 1,
+      losses: 2,
+      goalsFor: 9,
+      goalsAgainst: 7,
+      goalDifference: 2,
+      players: [
+        { id: 'p9', name: 'Волков', position: 'ВРТ', number: 1 },
+        { id: 'p10', name: 'Морозов', position: 'ЗАЩ', number: 3 },
+        { id: 'p11', name: 'Новиков', position: 'ПОЛ', number: 7 },
+        { id: 'p12', name: 'Федоров', position: 'НАП', number: 10 },
+      ],
+    },
+    {
+      id: '4',
+      name: 'Локомотив',
+      logo: '🟢',
+      points: 7,
+      played: 6,
+      wins: 2,
+      draws: 1,
+      losses: 3,
+      goalsFor: 6,
+      goalsAgainst: 8,
+      goalDifference: -2,
+      players: [
+        { id: 'p13', name: 'Егоров', position: 'ВРТ', number: 1 },
+        { id: 'p14', name: 'Павлов', position: 'ЗАЩ', number: 2 },
+        { id: 'p15', name: 'Семенов', position: 'ПОЛ', number: 6 },
+        { id: 'p16', name: 'Григорьев', position: 'НАП', number: 9 },
+      ],
+    },
   ]);
 
   const [matches, setMatches] = useState<Match[]>([]);
+  const [selectedTeam, setSelectedTeam] = useState<Team | null>(null);
+  const [newTeamName, setNewTeamName] = useState('');
+  const [newTeamLogo, setNewTeamLogo] = useState('⚽');
+  const [homeTeamId, setHomeTeamId] = useState('');
+  const [awayTeamId, setAwayTeamId] = useState('');
+  const [homeScore, setHomeScore] = useState('');
+  const [awayScore, setAwayScore] = useState('');
   const [newPlayerName, setNewPlayerName] = useState('');
-  const [selectedWinner, setSelectedWinner] = useState('');
-  const [selectedLoser, setSelectedLoser] = useState('');
-  const [isAddPlayerOpen, setIsAddPlayerOpen] = useState(false);
+  const [newPlayerPosition, setNewPlayerPosition] = useState('');
+  const [newPlayerNumber, setNewPlayerNumber] = useState('');
+  const [isAddTeamOpen, setIsAddTeamOpen] = useState(false);
   const [isAddMatchOpen, setIsAddMatchOpen] = useState(false);
+  const [isViewTeamOpen, setIsViewTeamOpen] = useState(false);
 
-  const calculateNewRating = (currentRating: number, opponentRating: number, won: boolean) => {
-    const K = 32;
-    const expectedScore = 1 / (1 + Math.pow(10, (opponentRating - currentRating) / 400));
-    const actualScore = won ? 1 : 0;
-    return Math.round(currentRating + K * (actualScore - expectedScore));
+  const addTeam = () => {
+    if (!newTeamName.trim()) {
+      toast.error('Введите название команды');
+      return;
+    }
+
+    const newTeam: Team = {
+      id: Date.now().toString(),
+      name: newTeamName,
+      logo: newTeamLogo || '⚽',
+      points: 0,
+      played: 0,
+      wins: 0,
+      draws: 0,
+      losses: 0,
+      goalsFor: 0,
+      goalsAgainst: 0,
+      goalDifference: 0,
+      players: [],
+    };
+
+    setTeams([...teams, newTeam]);
+    setNewTeamName('');
+    setNewTeamLogo('⚽');
+    setIsAddTeamOpen(false);
+    toast.success(`Команда ${newTeamName} добавлена`);
   };
 
-  const addPlayer = () => {
-    if (!newPlayerName.trim()) {
-      toast.error('Введите имя игрока');
+  const addMatch = () => {
+    if (!homeTeamId || !awayTeamId) {
+      toast.error('Выберите обе команды');
+      return;
+    }
+
+    if (homeTeamId === awayTeamId) {
+      toast.error('Команды должны быть разными');
+      return;
+    }
+
+    const home = parseInt(homeScore) || 0;
+    const away = parseInt(awayScore) || 0;
+
+    const updatedTeams = teams.map(team => {
+      if (team.id === homeTeamId) {
+        const isWin = home > away;
+        const isDraw = home === away;
+        return {
+          ...team,
+          played: team.played + 1,
+          wins: team.wins + (isWin ? 1 : 0),
+          draws: team.draws + (isDraw ? 1 : 0),
+          losses: team.losses + (!isWin && !isDraw ? 1 : 0),
+          points: team.points + (isWin ? 3 : isDraw ? 1 : 0),
+          goalsFor: team.goalsFor + home,
+          goalsAgainst: team.goalsAgainst + away,
+          goalDifference: team.goalDifference + (home - away),
+        };
+      }
+      if (team.id === awayTeamId) {
+        const isWin = away > home;
+        const isDraw = home === away;
+        return {
+          ...team,
+          played: team.played + 1,
+          wins: team.wins + (isWin ? 1 : 0),
+          draws: team.draws + (isDraw ? 1 : 0),
+          losses: team.losses + (!isWin && !isDraw ? 1 : 0),
+          points: team.points + (isWin ? 3 : isDraw ? 1 : 0),
+          goalsFor: team.goalsFor + away,
+          goalsAgainst: team.goalsAgainst + home,
+          goalDifference: team.goalDifference + (away - home),
+        };
+      }
+      return team;
+    });
+
+    setTeams(updatedTeams);
+
+    const newMatch: Match = {
+      id: Date.now().toString(),
+      homeTeamId,
+      awayTeamId,
+      homeScore: home,
+      awayScore: away,
+      date: new Date(),
+    };
+
+    setMatches([newMatch, ...matches]);
+    setHomeTeamId('');
+    setAwayTeamId('');
+    setHomeScore('');
+    setAwayScore('');
+    setIsAddMatchOpen(false);
+    toast.success('Результат матча добавлен');
+  };
+
+  const addPlayerToTeam = () => {
+    if (!selectedTeam || !newPlayerName.trim() || !newPlayerPosition || !newPlayerNumber) {
+      toast.error('Заполните все поля игрока');
       return;
     }
 
     const newPlayer: Player = {
       id: Date.now().toString(),
       name: newPlayerName,
-      rating: 1200,
-      wins: 0,
-      losses: 0,
-      winRate: 0,
-      gamesPlayed: 0,
+      position: newPlayerPosition,
+      number: parseInt(newPlayerNumber),
     };
 
-    setPlayers([...players, newPlayer]);
-    setNewPlayerName('');
-    setIsAddPlayerOpen(false);
-    toast.success(`Игрок ${newPlayerName} добавлен`);
-  };
-
-  const addMatch = () => {
-    if (!selectedWinner || !selectedLoser) {
-      toast.error('Выберите победителя и проигравшего');
-      return;
-    }
-
-    if (selectedWinner === selectedLoser) {
-      toast.error('Победитель и проигравший не могут быть одним игроком');
-      return;
-    }
-
-    const winner = players.find(p => p.id === selectedWinner);
-    const loser = players.find(p => p.id === selectedLoser);
-
-    if (!winner || !loser) return;
-
-    const newWinnerRating = calculateNewRating(winner.rating, loser.rating, true);
-    const newLoserRating = calculateNewRating(loser.rating, winner.rating, false);
-
-    const updatedPlayers = players.map(player => {
-      if (player.id === selectedWinner) {
-        const newWins = player.wins + 1;
-        const newGamesPlayed = player.gamesPlayed + 1;
+    const updatedTeams = teams.map(team => {
+      if (team.id === selectedTeam.id) {
         return {
-          ...player,
-          rating: newWinnerRating,
-          wins: newWins,
-          gamesPlayed: newGamesPlayed,
-          winRate: Math.round((newWins / newGamesPlayed) * 100),
+          ...team,
+          players: [...team.players, newPlayer],
         };
       }
-      if (player.id === selectedLoser) {
-        const newLosses = player.losses + 1;
-        const newGamesPlayed = player.gamesPlayed + 1;
-        return {
-          ...player,
-          rating: newLoserRating,
-          losses: newLosses,
-          gamesPlayed: newGamesPlayed,
-          winRate: Math.round((player.wins / newGamesPlayed) * 100),
-        };
-      }
-      return player;
+      return team;
     });
 
-    setPlayers(updatedPlayers);
-
-    const newMatch: Match = {
-      id: Date.now().toString(),
-      winnerId: selectedWinner,
-      loserId: selectedLoser,
-      date: new Date(),
-    };
-
-    setMatches([newMatch, ...matches]);
-    setSelectedWinner('');
-    setSelectedLoser('');
-    setIsAddMatchOpen(false);
-    toast.success('Результат матча добавлен, рейтинг обновлён');
+    setTeams(updatedTeams);
+    setSelectedTeam({ ...selectedTeam, players: [...selectedTeam.players, newPlayer] });
+    setNewPlayerName('');
+    setNewPlayerPosition('');
+    setNewPlayerNumber('');
+    toast.success(`Игрок ${newPlayer.name} добавлен`);
   };
 
-  const sortedPlayers = [...players].sort((a, b) => b.rating - a.rating);
-
-  const getRankIcon = (index: number) => {
-    if (index === 0) return <Icon name="Trophy" className="text-yellow-500" size={20} />;
-    if (index === 1) return <Icon name="Medal" className="text-gray-400" size={20} />;
-    if (index === 2) return <Icon name="Award" className="text-amber-700" size={20} />;
-    return null;
+  const viewTeam = (team: Team) => {
+    setSelectedTeam(team);
+    setIsViewTeamOpen(true);
   };
 
-  const totalGames = players.reduce((sum, p) => sum + p.gamesPlayed, 0);
-  const avgRating = players.length > 0 
-    ? Math.round(players.reduce((sum, p) => sum + p.rating, 0) / players.length)
-    : 0;
+  const sortedTeams = [...teams].sort((a, b) => {
+    if (b.points !== a.points) return b.points - a.points;
+    if (b.goalDifference !== a.goalDifference) return b.goalDifference - a.goalDifference;
+    return b.goalsFor - a.goalsFor;
+  });
+
+  const totalGames = teams.reduce((sum, t) => sum + t.played, 0) / 2;
+  const totalGoals = teams.reduce((sum, t) => sum + t.goalsFor, 0);
 
   return (
     <div className="min-h-screen bg-background p-4 md:p-8">
       <div className="max-w-7xl mx-auto space-y-6">
         <div className="text-center space-y-2 animate-fade-in">
-          <h1 className="text-4xl md:text-5xl font-bold text-primary">
-            Турнирная система
+          <h1 className="text-4xl md:text-5xl font-bold text-primary flex items-center justify-center gap-3">
+            <Icon name="Trophy" size={40} />
+            Футбольная лига
           </h1>
           <p className="text-muted-foreground text-lg">
-            Автоматический подсчёт рейтинга • Статистика игроков
+            Турнирная таблица • Составы команд • Результаты матчей
           </p>
         </div>
 
@@ -176,19 +308,19 @@ const Index = () => {
             <CardHeader className="pb-3">
               <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
                 <Icon name="Users" size={18} />
-                Игроков
+                Команд
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold">{players.length}</div>
+              <div className="text-3xl font-bold">{teams.length}</div>
             </CardContent>
           </Card>
 
           <Card className="border-secondary/20">
             <CardHeader className="pb-3">
               <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-                <Icon name="Target" size={18} />
-                Всего игр
+                <Icon name="Flame" size={18} />
+                Сыграно матчей
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -199,44 +331,53 @@ const Index = () => {
           <Card className="border-accent/20">
             <CardHeader className="pb-3">
               <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-                <Icon name="TrendingUp" size={18} />
-                Средний рейтинг
+                <Icon name="Zap" size={18} />
+                Всего голов
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold">{avgRating}</div>
+              <div className="text-3xl font-bold">{totalGoals}</div>
             </CardContent>
           </Card>
         </div>
 
         <div className="flex flex-col sm:flex-row gap-3">
-          <Dialog open={isAddPlayerOpen} onOpenChange={setIsAddPlayerOpen}>
+          <Dialog open={isAddTeamOpen} onOpenChange={setIsAddTeamOpen}>
             <DialogTrigger asChild>
               <Button className="flex-1 gap-2" size="lg">
-                <Icon name="UserPlus" size={20} />
-                Добавить игрока
+                <Icon name="Plus" size={20} />
+                Добавить команду
               </Button>
             </DialogTrigger>
             <DialogContent>
               <DialogHeader>
-                <DialogTitle>Новый игрок</DialogTitle>
+                <DialogTitle>Новая команда</DialogTitle>
                 <DialogDescription>
-                  Начальный рейтинг: 1200
+                  Создайте команду и добавьте игроков
                 </DialogDescription>
               </DialogHeader>
               <div className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="playerName">Имя игрока</Label>
+                  <Label htmlFor="teamName">Название команды</Label>
                   <Input
-                    id="playerName"
-                    value={newPlayerName}
-                    onChange={(e) => setNewPlayerName(e.target.value)}
-                    placeholder="Введите имя"
-                    onKeyDown={(e) => e.key === 'Enter' && addPlayer()}
+                    id="teamName"
+                    value={newTeamName}
+                    onChange={(e) => setNewTeamName(e.target.value)}
+                    placeholder="Введите название"
                   />
                 </div>
-                <Button onClick={addPlayer} className="w-full">
-                  Добавить
+                <div className="space-y-2">
+                  <Label htmlFor="teamLogo">Эмодзи (логотип)</Label>
+                  <Input
+                    id="teamLogo"
+                    value={newTeamLogo}
+                    onChange={(e) => setNewTeamLogo(e.target.value)}
+                    placeholder="⚽"
+                    maxLength={2}
+                  />
+                </div>
+                <Button onClick={addTeam} className="w-full">
+                  Создать команду
                 </Button>
               </div>
             </DialogContent>
@@ -245,7 +386,7 @@ const Index = () => {
           <Dialog open={isAddMatchOpen} onOpenChange={setIsAddMatchOpen}>
             <DialogTrigger asChild>
               <Button className="flex-1 gap-2" size="lg" variant="secondary">
-                <Icon name="Swords" size={20} />
+                <Icon name="Calendar" size={20} />
                 Добавить результат
               </Button>
             </DialogTrigger>
@@ -253,40 +394,66 @@ const Index = () => {
               <DialogHeader>
                 <DialogTitle>Результат матча</DialogTitle>
                 <DialogDescription>
-                  Рейтинг обновится автоматически по системе Эло
+                  Таблица обновится автоматически (3 очка за победу, 1 за ничью)
                 </DialogDescription>
               </DialogHeader>
               <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label>Победитель</Label>
-                  <Select value={selectedWinner} onValueChange={setSelectedWinner}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Выберите игрока" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {players.map((player) => (
-                        <SelectItem key={player.id} value={player.id}>
-                          {player.name} (Рейтинг: {player.rating})
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-2">
+                    <Label>Команда дома</Label>
+                    <Select value={homeTeamId} onValueChange={setHomeTeamId}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Выбрать" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {teams.map((team) => (
+                          <SelectItem key={team.id} value={team.id}>
+                            {team.logo} {team.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Команда в гостях</Label>
+                    <Select value={awayTeamId} onValueChange={setAwayTeamId}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Выбрать" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {teams.map((team) => (
+                          <SelectItem key={team.id} value={team.id}>
+                            {team.logo} {team.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
 
-                <div className="space-y-2">
-                  <Label>Проигравший</Label>
-                  <Select value={selectedLoser} onValueChange={setSelectedLoser}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Выберите игрока" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {players.map((player) => (
-                        <SelectItem key={player.id} value={player.id}>
-                          {player.name} (Рейтинг: {player.rating})
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-2">
+                    <Label>Голы дома</Label>
+                    <Input
+                      type="number"
+                      min="0"
+                      value={homeScore}
+                      onChange={(e) => setHomeScore(e.target.value)}
+                      placeholder="0"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Голы в гостях</Label>
+                    <Input
+                      type="number"
+                      min="0"
+                      value={awayScore}
+                      onChange={(e) => setAwayScore(e.target.value)}
+                      placeholder="0"
+                    />
+                  </div>
                 </div>
 
                 <Button onClick={addMatch} className="w-full">
@@ -297,105 +464,231 @@ const Index = () => {
           </Dialog>
         </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Icon name="Trophy" size={24} />
-              Таблица лидеров
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b border-border">
-                    <th className="text-left p-3 text-sm font-semibold text-muted-foreground">Место</th>
-                    <th className="text-left p-3 text-sm font-semibold text-muted-foreground">Игрок</th>
-                    <th className="text-right p-3 text-sm font-semibold text-muted-foreground">Рейтинг</th>
-                    <th className="text-right p-3 text-sm font-semibold text-muted-foreground">Игр</th>
-                    <th className="text-right p-3 text-sm font-semibold text-muted-foreground">Побед</th>
-                    <th className="text-right p-3 text-sm font-semibold text-muted-foreground">Поражений</th>
-                    <th className="text-right p-3 text-sm font-semibold text-muted-foreground">Процент побед</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {sortedPlayers.map((player, index) => (
-                    <tr
-                      key={player.id}
-                      className="border-b border-border/50 hover:bg-muted/50 transition-colors"
-                    >
-                      <td className="p-3">
-                        <div className="flex items-center gap-2">
-                          {getRankIcon(index)}
-                          <span className="font-semibold text-lg">{index + 1}</span>
-                        </div>
-                      </td>
-                      <td className="p-3 font-medium">{player.name}</td>
-                      <td className="p-3 text-right">
-                        <Badge variant="outline" className="font-mono text-base border-primary/40">
-                          {player.rating}
-                        </Badge>
-                      </td>
-                      <td className="p-3 text-right text-muted-foreground">{player.gamesPlayed}</td>
-                      <td className="p-3 text-right">
-                        <span className="text-green-500 font-semibold">{player.wins}</span>
-                      </td>
-                      <td className="p-3 text-right">
-                        <span className="text-red-500 font-semibold">{player.losses}</span>
-                      </td>
-                      <td className="p-3 text-right">
-                        <div className="flex items-center justify-end gap-2">
-                          <div className="w-16 h-2 bg-muted rounded-full overflow-hidden">
-                            <div
-                              className="h-full bg-gradient-to-r from-primary to-secondary transition-all"
-                              style={{ width: `${player.winRate}%` }}
-                            />
-                          </div>
-                          <span className="font-semibold w-12 text-right">{player.winRate}%</span>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </CardContent>
-        </Card>
+        <Tabs defaultValue="table" className="space-y-4">
+          <TabsList className="grid w-full grid-cols-2">
+            <TabsTrigger value="table" className="gap-2">
+              <Icon name="Table" size={18} />
+              Турнирная таблица
+            </TabsTrigger>
+            <TabsTrigger value="matches" className="gap-2">
+              <Icon name="ListChecks" size={18} />
+              Матчи
+            </TabsTrigger>
+          </TabsList>
 
-        {matches.length > 0 && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Icon name="History" size={24} />
-                История матчей
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-2">
-                {matches.slice(0, 10).map((match) => {
-                  const winner = players.find(p => p.id === match.winnerId);
-                  const loser = players.find(p => p.id === match.loserId);
-                  return (
-                    <div
-                      key={match.id}
-                      className="flex items-center justify-between p-3 rounded-lg bg-muted/30 border border-border/50"
-                    >
-                      <div className="flex items-center gap-3">
-                        <Icon name="CheckCircle2" className="text-green-500" size={20} />
-                        <span className="font-medium">{winner?.name}</span>
-                        <Icon name="Swords" className="text-muted-foreground" size={16} />
-                        <span className="text-muted-foreground">{loser?.name}</span>
-                      </div>
-                      <span className="text-sm text-muted-foreground">
-                        {match.date.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}
-                      </span>
-                    </div>
-                  );
-                })}
+          <TabsContent value="table">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Icon name="Trophy" size={24} />
+                  Турнирная таблица
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-b border-border">
+                        <th className="text-left p-3 text-sm font-semibold text-muted-foreground">Место</th>
+                        <th className="text-left p-3 text-sm font-semibold text-muted-foreground">Команда</th>
+                        <th className="text-center p-3 text-sm font-semibold text-muted-foreground">И</th>
+                        <th className="text-center p-3 text-sm font-semibold text-muted-foreground">В</th>
+                        <th className="text-center p-3 text-sm font-semibold text-muted-foreground">Н</th>
+                        <th className="text-center p-3 text-sm font-semibold text-muted-foreground">П</th>
+                        <th className="text-center p-3 text-sm font-semibold text-muted-foreground">Мячи</th>
+                        <th className="text-center p-3 text-sm font-semibold text-muted-foreground">Разница</th>
+                        <th className="text-center p-3 text-sm font-semibold text-muted-foreground">Очки</th>
+                        <th className="text-center p-3 text-sm font-semibold text-muted-foreground">Состав</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {sortedTeams.map((team, index) => (
+                        <tr
+                          key={team.id}
+                          className="border-b border-border/50 hover:bg-muted/50 transition-colors"
+                        >
+                          <td className="p-3">
+                            <div className="flex items-center gap-2">
+                              {index === 0 && <Icon name="Crown" className="text-yellow-500" size={18} />}
+                              <span className="font-semibold text-lg">{index + 1}</span>
+                            </div>
+                          </td>
+                          <td className="p-3">
+                            <div className="flex items-center gap-2 font-medium">
+                              <span className="text-2xl">{team.logo}</span>
+                              {team.name}
+                            </div>
+                          </td>
+                          <td className="p-3 text-center text-muted-foreground">{team.played}</td>
+                          <td className="p-3 text-center text-green-500 font-semibold">{team.wins}</td>
+                          <td className="p-3 text-center text-yellow-500 font-semibold">{team.draws}</td>
+                          <td className="p-3 text-center text-red-500 font-semibold">{team.losses}</td>
+                          <td className="p-3 text-center text-muted-foreground">
+                            {team.goalsFor}:{team.goalsAgainst}
+                          </td>
+                          <td className="p-3 text-center">
+                            <Badge variant={team.goalDifference > 0 ? 'default' : 'secondary'}>
+                              {team.goalDifference > 0 ? '+' : ''}{team.goalDifference}
+                            </Badge>
+                          </td>
+                          <td className="p-3 text-center">
+                            <Badge className="font-mono text-lg px-3 py-1">
+                              {team.points}
+                            </Badge>
+                          </td>
+                          <td className="p-3 text-center">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => viewTeam(team)}
+                              className="gap-1"
+                            >
+                              <Icon name="Users" size={16} />
+                              {team.players.length}
+                            </Button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="matches">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Icon name="History" size={24} />
+                  История матчей
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {matches.length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    Пока нет сыгранных матчей
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {matches.map((match) => {
+                      const homeTeam = teams.find(t => t.id === match.homeTeamId);
+                      const awayTeam = teams.find(t => t.id === match.awayTeamId);
+                      const isHomeWin = match.homeScore > match.awayScore;
+                      const isDraw = match.homeScore === match.awayScore;
+                      
+                      return (
+                        <div
+                          key={match.id}
+                          className="flex items-center justify-between p-4 rounded-lg bg-muted/30 border border-border/50"
+                        >
+                          <div className="flex items-center gap-4 flex-1">
+                            <div className={`flex items-center gap-2 flex-1 ${isHomeWin ? 'font-bold' : ''}`}>
+                              <span className="text-2xl">{homeTeam?.logo}</span>
+                              <span>{homeTeam?.name}</span>
+                            </div>
+                            
+                            <div className="flex items-center gap-3 px-4">
+                              <Badge variant="outline" className="text-xl font-bold px-4 py-2">
+                                {match.homeScore}
+                              </Badge>
+                              <span className="text-muted-foreground">-</span>
+                              <Badge variant="outline" className="text-xl font-bold px-4 py-2">
+                                {match.awayScore}
+                              </Badge>
+                            </div>
+
+                            <div className={`flex items-center gap-2 flex-1 justify-end ${!isHomeWin && !isDraw ? 'font-bold' : ''}`}>
+                              <span>{awayTeam?.name}</span>
+                              <span className="text-2xl">{awayTeam?.logo}</span>
+                            </div>
+                          </div>
+
+                          <div className="ml-4 text-sm text-muted-foreground">
+                            {match.date.toLocaleDateString('ru-RU')}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
+
+        <Dialog open={isViewTeamOpen} onOpenChange={setIsViewTeamOpen}>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2 text-2xl">
+                <span className="text-3xl">{selectedTeam?.logo}</span>
+                {selectedTeam?.name}
+              </DialogTitle>
+              <DialogDescription>
+                Состав команды • {selectedTeam?.players.length} игроков
+              </DialogDescription>
+            </DialogHeader>
+            
+            <div className="space-y-4">
+              <div className="grid grid-cols-3 gap-3">
+                <Input
+                  placeholder="Имя игрока"
+                  value={newPlayerName}
+                  onChange={(e) => setNewPlayerName(e.target.value)}
+                />
+                <Select value={newPlayerPosition} onValueChange={setNewPlayerPosition}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Позиция" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="ВРТ">Вратарь</SelectItem>
+                    <SelectItem value="ЗАЩ">Защитник</SelectItem>
+                    <SelectItem value="ПОЛ">Полузащитник</SelectItem>
+                    <SelectItem value="НАП">Нападающий</SelectItem>
+                  </SelectContent>
+                </Select>
+                <div className="flex gap-2">
+                  <Input
+                    type="number"
+                    placeholder="№"
+                    value={newPlayerNumber}
+                    onChange={(e) => setNewPlayerNumber(e.target.value)}
+                    min="1"
+                    max="99"
+                  />
+                  <Button onClick={addPlayerToTeam} size="icon">
+                    <Icon name="Plus" size={18} />
+                  </Button>
+                </div>
               </div>
-            </CardContent>
-          </Card>
-        )}
+
+              <div className="border rounded-lg overflow-hidden">
+                <table className="w-full">
+                  <thead className="bg-muted">
+                    <tr>
+                      <th className="text-left p-3 text-sm font-semibold">Номер</th>
+                      <th className="text-left p-3 text-sm font-semibold">Игрок</th>
+                      <th className="text-left p-3 text-sm font-semibold">Позиция</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {selectedTeam?.players.sort((a, b) => a.number - b.number).map((player) => (
+                      <tr key={player.id} className="border-t border-border">
+                        <td className="p-3">
+                          <Badge variant="outline" className="font-mono">
+                            {player.number}
+                          </Badge>
+                        </td>
+                        <td className="p-3 font-medium">{player.name}</td>
+                        <td className="p-3 text-muted-foreground">{player.position}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );
